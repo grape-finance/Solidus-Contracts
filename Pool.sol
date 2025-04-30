@@ -62,8 +62,8 @@ contract Pool is Ownable, ReentrancyGuard {
     uint256 public refreshCooldown = 3600; // = 1 hour
     uint256 public ratioStepUp = 2000; // = 0.002 or 0.2% -> ratioStep when CR increase
     uint256 public ratioStepDown = 1000; // = 0.001 or 0.1% -> ratioStep when CR decrease
-    uint256 public priceTarget = 1e18; // = 1; 1 XToken pegged to the value of 1 ETH
-    uint256 public priceBand = 5e15; // = 0.005; CR will be adjusted if XToken > 1.005 ETH or XToken < 0.995 ETH
+    uint256 public priceTarget = 1e18; // = 1; 1 XToken pegged to the value of 1 Gas Token
+    uint256 public priceBand = 5e15; // = 0.005; CR will be adjusted if XToken > 1.005 Gas Token or XToken < 0.995 Gas Token
     uint256 public minCollateralRatio = 1e6;
     uint256 public yTokenSlippage = 100000; // 10%
     bool public collateralRatioPaused = false;
@@ -146,11 +146,11 @@ contract Pool is Ownable, ReentrancyGuard {
 
     /// @notice Calculate the expected results for redemption
     /// @param _xTokenIn Amount of XToken input.
-    /// @return _ethOut : the amount of Eth output
+    /// @return _ethOut : the amount of Gas Token output
     /// @return _yTokenOutSpot : the amount of YToken output based on Spot prrice
     /// @return _yTokenOutTwap : the amount of YToken output based on TWAP
-    /// @return _ethFee : the fee amount in Eth
-    /// @return _requiredEthBalance : required Eth balance in the pool
+    /// @return _ethFee : the fee amount in Gas Token
+    /// @return _requiredEthBalance : required Gas Token balance in the pool
     function calcRedeem(uint256 _xTokenIn)
         public
         view
@@ -222,7 +222,7 @@ contract Pool is Ownable, ReentrancyGuard {
         emit NewCollateralRatioSet(collateralRatio);
     }
 
-    /// @notice fallback for payable -> required to unwrap WETH
+    /// @notice fallback for payable -> required to unwrap Gas Token
     receive() external payable {}
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -262,12 +262,12 @@ contract Pool is Ownable, ReentrancyGuard {
         (uint256 _ethOut, uint256 _yTokenOutSpot, uint256 _yTokenOutTwap, uint256 _fee, uint256 _requiredEthBalance) = calcRedeem(_xTokenIn);
 
         // Check if collateral balance meets and meet output expectation
-        require(_requiredEthBalance <= usableCollateralBalance(), "Pool::redeem: > ETH balance");
+        require(_requiredEthBalance <= usableCollateralBalance(), "Pool::redeem: > Gas Token balance");
 
         // Prevent price manipulation to get more yToken
         checkPriceFluctuation(_yTokenOutSpot, _yTokenOutTwap);
 
-        require(_minEthOut <= _ethOut && _minYTokenOut <= _yTokenOutSpot, "Pool::redeem: >slippage");
+        require(_minEthOut <= _ethOut && _minYTokenOut <= _yTokenOutSpot, "Pool::redeem: > slippage");
 
         if (_ethOut > 0) {
             userInfo[_sender].ethBalance = userInfo[_sender].ethBalance + _ethOut;
@@ -293,7 +293,7 @@ contract Pool is Ownable, ReentrancyGuard {
      */
     function collect() external nonReentrant {
         address _sender = msg.sender;
-        require(userInfo[_sender].lastAction < block.number, "Pool::collect: <minimum_delay");
+        require(userInfo[_sender].lastAction < block.number, "Pool::collect: < minimum_delay");
 
         bool _sendXToken = false;
         bool _sendYToken = false;
@@ -338,7 +338,7 @@ contract Pool is Ownable, ReentrancyGuard {
         }
     }
 
-    /// @notice Function to recollateralize the pool by receiving ETH
+    /// @notice Function to recollateralize the pool by receiving Gas Token
     function recollateralize() external payable {
         uint256 _amount = msg.value;
         require(_amount > 0, "Pool::recollateralize: Invalid amount");
@@ -408,13 +408,13 @@ contract Pool is Ownable, ReentrancyGuard {
     /// @notice Set the minimum Collateral Ratio
     /// @param _minCollateralRatio value of minimum Collateral Ratio in 1e6 precision
     function setMinCollateralRatio(uint256 _minCollateralRatio) external onlyOwner {
-        require(_minCollateralRatio <= COLLATERAL_RATIO_MAX, "Pool::setMinCollateralRatio: >COLLATERAL_RATIO_MAX");
+        require(_minCollateralRatio <= COLLATERAL_RATIO_MAX, "Pool::setMinCollateralRatio: > COLLATERAL_RATIO_MAX");
         minCollateralRatio = _minCollateralRatio;
         emit MinCollateralRatioUpdated(_minCollateralRatio);
     }
 
-    /// @notice Transfer the excess balance of WETH to FeeReserve
-    /// @param _amount amount of WETH to reduce
+    /// @notice Transfer the excess balance of Wrapped Gas to FeeReserve
+    /// @param _amount amount of Wrapped Gas to reduce
     function reduceExcessCollateral(uint256 _amount) external onlyOwner {
         (uint256 _excessWethBal, bool exceeded) = calcExcessCollateralBalance();
         if (exceeded && _excessWethBal > 0) {
@@ -454,7 +454,7 @@ contract Pool is Ownable, ReentrancyGuard {
         emit TreasurySet(_treasury);
     }
 
-    /// @notice Move weth to treasury
+    /// @notice Move Wrapped Gas to treasury
     function transferToTreasury(uint256 _amount) internal {
         require(treasury != address(0), "Pool::transferToTreasury:Invalid address");
         if (_amount > 0) {

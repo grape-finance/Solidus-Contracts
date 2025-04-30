@@ -21,8 +21,8 @@ contract sSYNTH is YToken {
         address _reserve
     ) YToken(_name, _symbol) {
         _mint(msg.sender, 1_000_000 ether);
-        _mint(_devFund, 3_000_000 ether); // 10%
-        _mint(_treasuryFund, 3_000_000 ether); // 10%
+        _mint(_devFund, 3_000_000 ether); 
+        _mint(_treasuryFund, 3_000_000 ether); 
         _mint(_reserve, MAX_TOTAL_SUPPLY - 7_000_000 ether);
     }
 

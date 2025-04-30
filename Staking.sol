@@ -464,7 +464,7 @@ contract FantasticStaking is ReentrancyGuard, Ownable {
         _;
     }
 
-    /// @notice fallback for payable -> required to unwrap WETH
+    /// @notice fallback for payable -> required to unwrap Gas Token
     receive() external payable {}
 
     /* ========== EVENTS ========== */
